@@ -1,0 +1,1 @@
+Download and extract public_data.zip and starter_kit.zip in this folder
