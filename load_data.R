@@ -23,3 +23,31 @@ qmd_df <- map2(qmd_rdf$QuestionId, qmd_rdf$SubjectId, function(x, y) {
 
 submit12_rdf <- read_csv("../data/starter_kit/submission_templates/submission_task_1_2.csv") %>%
   select(-1)
+
+qmd_max_level_df <- qmd_df %>%
+  inner_join(subjmd_rdf) %>%
+  group_by(QuestionId) %>%
+  filter(Level == max(Level)) %>%
+  ungroup()
+
+qmd_all_level_df <- qmd_df %>%
+  inner_join(subjmd_rdf) %>%
+  mutate(ParentId = as.numeric(ParentId)) %>%
+  filter(Level == 3) %>%
+  rename(Subject = Name) %>%
+  select(-Level) %>%
+  inner_join(subjmd_rdf %>%
+               select(SubjectId, Name, ParentId) %>%
+               rename(SubjectParent1 = Name,
+                      ParentId1 = ParentId), c("ParentId" = "SubjectId")) %>%
+  mutate(ParentId1 = as.numeric(ParentId1)) %>%
+  inner_join(subjmd_rdf %>%
+               select(SubjectId, Name, ParentId) %>%
+               rename(SubjectParent2 = Name,
+                      ParentId2 = ParentId), c("ParentId1" = "SubjectId")) %>%
+  mutate(ParentId2 = as.numeric(ParentId2)) %>%
+  inner_join(subjmd_rdf %>%
+               select(SubjectId, Name, ParentId) %>%
+               rename(SubjectParent3 = Name,
+                      ParentId3 = ParentId), c("ParentId2" = "SubjectId")) %>%
+  select(QuestionId, SubjectId, Subject, SubjectParent1, SubjectParent2, SubjectParent3)

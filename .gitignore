@@ -11,6 +11,9 @@
 *.png
 *.jpg
 *.jpeg
+*.rdata
+*.Rdata
+*.RData
 
 .DS_Store
 
