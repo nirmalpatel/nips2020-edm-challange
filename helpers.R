@@ -31,6 +31,20 @@ get_quiz_responses <- function(quizid) {
   
 }
 
+get_mirt_mod <- function(quizid) {
+  
+  get_quiz_responses(quizid) %>%
+    select(UserId, QuestionId, IsCorrect) %>%
+    spread(QuestionId, IsCorrect) %>%
+    select(-1) %>%
+    as.matrix() -> itemresp_mat
+  
+  item_mod <- mirt(itemresp_mat, 1, "2PL")
+  
+  coef(item_mod, IRTpars = T, simplify = T)
+  
+}
+
 get_group_responses <- function(gid) {
   
   ansmd_rdf %>%

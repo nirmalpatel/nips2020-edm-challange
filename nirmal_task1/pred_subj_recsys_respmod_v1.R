@@ -87,8 +87,7 @@ response_mod_df <- response_mod_rdf %>%
 
 set.seed(100)
 
-response_mod_train_df <- response_mod_df %>%
-  sample_n(30000)
+response_mod_train_df <- response_mod_df
 
 response_mod <- lm(IsCorrect ~ avg_subj_score + q_diff, data = response_mod_train_df)
 summary(response_mod)
@@ -117,10 +116,15 @@ reco$train(data_memory(user_ords[as.character(subj_scores_ord_df$UserId)], subj_
            opts = list(dim = 40, costp_l2 = 0.01, costq_l2 = 0.01, nthread = 7, niter = 50)
 )
 
-pred <- reco$predict(data_memory(user_ords[as.character(submit_df$UserId)], subj_ords[as.character(submit_df$SubjectId)]), out_memory())
+# train_pred <- reco$predict(data_memory(user_ords[as.character(subj_scores_ord_df$UserId)], subj_ords[as.character(subj_scores_ord_df$SubjectId)]), out_memory())
+val_pred <- reco$predict(data_memory(user_ords[as.character(submit_df$UserId)], subj_ords[as.character(submit_df$SubjectId)]), out_memory())
+  
+train_rdf %>%
+  select(UserId, QuestionId, IsCorrect) %>%
+  inner_join(qmd_df)
 
 submit_predictors_df <- submit_df %>%
-  mutate(predval = pred) %>%
+  mutate(predval = val_pred) %>%
   group_by(UserId, QuestionId) %>%
   summarise(avg_subj_score = mean(predval, na.rm = TRUE)) %>%
   ungroup() %>%
@@ -130,17 +134,30 @@ submit_predictors_df
 
 iscorrect_pred <- predict(response_mod, newdata = submit_predictors_df)
 
-submit_df_results <- submit_predictors_df %>%
-  mutate(IsCorrectProb = iscorrect_pred,
-         IsCorrect = if_else(IsCorrectProb > .5, 1, 0)) %>%
-  select(UserId, QuestionId, IsCorrect)
+pred_train_subj_recsys_respmod_v1 <- response_mod_df %>%
+  select(UserId, QuestionId, IsCorrect) %>%
+  mutate(pred_subj_recsys_respmod_v1 = predict(response_mod))
   
-submit_df_export <- submit_rdf %>%
-  select(-1) %>%
-  inner_join(submit_df_results)
+pred_test_subj_recsys_respmod_v1 <- submit_predictors_df %>%
+  mutate(IsCorrectProb = iscorrect_pred) %>%
+  select(UserId, QuestionId, IsCorrectProb) %>%
+  mutate(analysis = "subj_recsys_respmod_v1")
 
-submit_df_last <- read_csv("submission_task_1_last.csv")
+save(pred_train_subj_recsys_respmod_v1, pred_test_subj_recsys_respmod_v1, file = "pred_subj_recsys_respmod_v1.Rdata")
 
-table(submit_df_export$IsCorrect, submit_df_last$IsCorrect)
-
-write_csv(submit_df_export, "submission_task_1.csv")
+# submit_df_results <- submit_predictors_df %>%
+#   mutate(IsCorrectProb = iscorrect_pred,
+#          IsCorrect = if_else(IsCorrectProb > .5, 1, 0)) %>%
+#   select(UserId, QuestionId, IsCorrectProb)
+# 
+# write_csv(submit_df_results, "submission2_res.csv")
+# 
+# submit_df_export <- submit_rdf %>%
+#   select(-1) %>%
+#   inner_join(submit_df_results)
+# 
+# submit_df_last <- read_csv("submission_task_1_last.csv")
+# 
+# table(submit_df_export$IsCorrect, submit_df_last$IsCorrect)
+# 
+# write_csv(submit_df_export, "submission_task_1.csv")
